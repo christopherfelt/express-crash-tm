@@ -2,9 +2,16 @@ const express = require("express");
 const uuid = require("uuid");
 const router = express.Router();
 const members = require("../../members");
+const Person = require("../../models/people");
 
-router.get("/", (req, res) => {
-  res.json(members);
+router.get("/", async (req, res) => {
+  try {
+    const persons = await Person.find();
+    if (!persons) throw Error("No Persons");
+    res.status(200).json(persons);
+  } catch (error) {
+    res.status(400).json({ msg: error.message });
+  }
 });
 
 router.get("/:id", (req, res) => {
@@ -20,19 +27,20 @@ router.get("/:id", (req, res) => {
   }
 });
 
-router.post("/", (req, res) => {
-  const newMember = {
-    id: uuid.v4(),
+router.post("/", async (req, res) => {
+  const newMember = new Person({
     name: req.body.name,
     email: req.body.email,
-    status: "active",
-  };
-  if (!newMember.name || !newMember.email) {
-    return res.status(400).json({ msg: "Please include name and email" });
-  }
+    active: true,
+  });
 
-  members.push(newMember);
-  res.json(members);
+  try {
+    const person = await newMember.save();
+    if (!person) throw Error("Something went wrong saving the item");
+    res.status(200).json(person);
+  } catch (error) {
+    res.status(400).json({ msg: error.messge });
+  }
 });
 
 module.exports = router;
